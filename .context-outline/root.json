@@ -1,0 +1,220 @@
+{
+  "name": "context-outline.nvim",
+  "summary": "A Neovim port of the Context Outline VS Code extension. It finds a project's .context-outline/root.json, shows it as a foldable tree in a side panel, and jumps to (and highlights) the code behind each step. It can also copy an item's title as context for an AI tool, and copy prompts that ask an AI tool to build or update the map.",
+  "basedOn": "not a git repository (no branch or commit yet)",
+  "children": [
+    {
+      "title": "1. When the plugin is set up",
+      "file": "lua/context-outline/init.lua",
+      "lines": "45-78",
+      "children": [
+        { "title": "Default settings: right side, 40 columns wide, highlight with Visual", "file": "lua/context-outline/init.lua", "lines": "4-20" },
+        { "title": "Merge the user's options over the defaults (every call to setup)", "file": "lua/context-outline/init.lua", "lines": "46" },
+        { "title": "Hand the settings to the panel", "file": "lua/context-outline/init.lua", "lines": "47-48" },
+        { "title": "Register commands and autocommands only the first time", "file": "lua/context-outline/init.lua", "lines": "49-52" },
+        {
+          "title": "Add the commands",
+          "children": [
+            { "title": ":ContextOutline toggles the panel; with left/right it reopens on that side", "file": "lua/context-outline/init.lua", "lines": "54-61" },
+            { "title": ":ContextOutlineBuildPrompt copies the build prompt", "file": "lua/context-outline/init.lua", "lines": "62-64" },
+            { "title": ":ContextOutlineReindexPrompt copies the reindex prompt", "file": "lua/context-outline/init.lua", "lines": "65-67" }
+          ]
+        },
+        {
+          "title": "Add the autocommands",
+          "children": [
+            { "title": "Reload the panel when a root.json is saved", "file": "lua/context-outline/init.lua", "lines": "70-76" },
+            { "title": "Remember the last code window whenever a window is entered", "file": "lua/context-outline/init.lua", "lines": "77" }
+          ]
+        },
+        { "title": "Public toggle/open/close just forward to the panel", "file": "lua/context-outline/init.lua", "lines": "80-90" }
+      ]
+    },
+    {
+      "title": "2. Opening and closing the panel",
+      "children": [
+        {
+          "title": "Open the panel",
+          "file": "lua/context-outline/panel.lua",
+          "lines": "302-340",
+          "children": [
+            { "title": "Run setup with defaults if nobody called it", "file": "lua/context-outline/panel.lua", "lines": "303-305" },
+            { "title": "If already open, just jump to it", "file": "lua/context-outline/panel.lua", "lines": "306-309" },
+            { "title": "Remember the window we came from, to open files in later", "file": "lua/context-outline/panel.lua", "lines": "310" },
+            { "title": "Make a throwaway, read-only scratch buffer named ContextOutline", "file": "lua/context-outline/panel.lua", "lines": "312-317" },
+            { "title": "Split on the chosen side at a fixed width, with no numbers, signs or wrapping", "file": "lua/context-outline/panel.lua", "lines": "319-332" },
+            { "title": "Bind the panel keys", "file": "lua/context-outline/panel.lua", "lines": "334" },
+            { "title": "Start with the top item expanded, then load the map", "file": "lua/context-outline/panel.lua", "lines": "335-339" }
+          ]
+        },
+        {
+          "title": "Close the panel",
+          "file": "lua/context-outline/panel.lua",
+          "lines": "342-352",
+          "children": [
+            { "title": "If it's the only window, swap in an empty buffer instead of closing", "file": "lua/context-outline/panel.lua", "lines": "346-350" }
+          ]
+        },
+        { "title": "Toggle opens or closes depending on whether it's showing", "file": "lua/context-outline/panel.lua", "lines": "354-360" },
+        { "title": "Panel counts as open only if its window still shows its buffer", "file": "lua/context-outline/panel.lua", "lines": "31-33" }
+      ]
+    },
+    {
+      "title": "3. Loading the map",
+      "children": [
+        {
+          "title": "Reload: find and read root.json, keeping fold state",
+          "file": "lua/context-outline/panel.lua",
+          "lines": "106-118",
+          "children": [
+            { "title": "Warn but still render if the file is broken", "file": "lua/context-outline/panel.lua", "lines": "110-115" }
+          ]
+        },
+        { "title": "Find the map by walking up from the current directory; the project root is the folder above .context-outline", "file": "lua/context-outline/map.lua", "lines": "8-14" },
+        {
+          "title": "Read and decode the JSON",
+          "file": "lua/context-outline/map.lua",
+          "lines": "17-31",
+          "children": [
+            { "title": "Fail if the file can't be read", "file": "lua/context-outline/map.lua", "lines": "18-21" },
+            { "title": "Fail if the file is empty", "file": "lua/context-outline/map.lua", "lines": "23-25" },
+            { "title": "Fail on invalid JSON; JSON nulls become nil", "file": "lua/context-outline/map.lua", "lines": "26-29" }
+          ]
+        },
+        { "title": "Reload automatically when the open map file is saved (paths compared after resolving links)", "file": "lua/context-outline/panel.lua", "lines": "370-375" }
+      ]
+    },
+    {
+      "title": "4. Drawing the tree",
+      "file": "lua/context-outline/panel.lua",
+      "lines": "41-103",
+      "children": [
+        { "title": "Do nothing if the panel buffer is gone", "file": "lua/context-outline/panel.lua", "lines": "42-44" },
+        {
+          "title": "Draw each item as an indented line",
+          "file": "lua/context-outline/panel.lua",
+          "lines": "47-76",
+          "children": [
+            { "title": "Pick the expanded, collapsed or leaf icon", "file": "lua/context-outline/panel.lua", "lines": "48-53" },
+            { "title": "Use title, then name, then \"(untitled)\"", "file": "lua/context-outline/map.lua", "lines": "47-49" },
+            { "title": "Top item with no name shows the project folder's name", "file": "lua/context-outline/panel.lua", "lines": "55-57" },
+            { "title": "Remember which item each line shows, keyed by its path like \"0.2.1\"", "file": "lua/context-outline/panel.lua", "lines": "58-59" },
+            { "title": "Grey hint at line end: basedOn for the top item, file:lines for the rest", "file": "lua/context-outline/panel.lua", "lines": "61-69" },
+            { "title": "Only draw children of expanded items", "file": "lua/context-outline/panel.lua", "lines": "71-75" }
+          ]
+        },
+        { "title": "No map found: show how to get the build prompt", "file": "lua/context-outline/panel.lua", "lines": "80-87" },
+        { "title": "Write the lines, hints and a bold top title into the read-only buffer", "file": "lua/context-outline/panel.lua", "lines": "89-102" }
+      ]
+    },
+    {
+      "title": "5. Panel keys",
+      "file": "lua/context-outline/panel.lua",
+      "lines": "284-300",
+      "children": [
+        { "title": "Each key can be one key or a list of keys, and only works in the panel", "file": "lua/context-outline/panel.lua", "lines": "286-290" },
+        {
+          "title": "Folding",
+          "children": [
+            { "title": "Toggle, expand or collapse an item; items without children are ignored; cursor stays put", "file": "lua/context-outline/panel.lua", "lines": "126-145" },
+            { "title": "Collapse on an already-closed item or leaf jumps to its parent", "file": "lua/context-outline/panel.lua", "lines": "148-164" }
+          ]
+        },
+        {
+          "title": "Open the item's code",
+          "file": "lua/context-outline/panel.lua",
+          "lines": "189-230",
+          "children": [
+            { "title": "Items without a file just fold/unfold", "file": "lua/context-outline/panel.lua", "lines": "195-197" },
+            { "title": "Stop with an error if the file doesn't exist", "file": "lua/context-outline/panel.lua", "lines": "198-202" },
+            { "title": "Clear the previous range highlight", "file": "lua/context-outline/panel.lua", "lines": "182-187" },
+            {
+              "title": "Pick a window for the code",
+              "file": "lua/context-outline/panel.lua",
+              "lines": "167-180",
+              "children": [
+                { "title": "Prefer the last code window", "file": "lua/context-outline/panel.lua", "lines": "168-170" },
+                { "title": "Else any normal (non-floating) window", "file": "lua/context-outline/panel.lua", "lines": "171-175" },
+                { "title": "Else make a new split and restore the panel's width", "file": "lua/context-outline/panel.lua", "lines": "176-179" }
+              ]
+            },
+            { "title": "Open the file in that window", "file": "lua/context-outline/panel.lua", "lines": "205-208" },
+            {
+              "title": "Read the line range: \"12-30\" or \"12\"; anything else is ignored",
+              "file": "lua/context-outline/map.lua",
+              "lines": "34-45",
+              "children": [
+                { "title": "Start is at least 1 and end is never before start", "file": "lua/context-outline/map.lua", "lines": "43-44" }
+              ]
+            },
+            { "title": "Clamp the range to the file's length and scroll it to the top", "file": "lua/context-outline/panel.lua", "lines": "211-216" },
+            { "title": "Highlight the range, unless highlight is turned off", "file": "lua/context-outline/panel.lua", "lines": "217-225" },
+            { "title": "Go back to the panel if focus_on_open is false", "file": "lua/context-outline/panel.lua", "lines": "227-229" }
+          ]
+        },
+        {
+          "title": "Yank context for AI tools",
+          "children": [
+            { "title": "Normal mode yanks the item under the cursor", "file": "lua/context-outline/panel.lua", "lines": "242-247" },
+            { "title": "Visual mode yanks every selected item", "file": "lua/context-outline/panel.lua", "lines": "249-262" },
+            { "title": "Build the text: a header line, then one item: \"title\" line per item", "file": "lua/context-outline/map.lua", "lines": "53-59" },
+            { "title": "Put it in the \" and + registers; missing clipboard is ignored", "file": "lua/context-outline/panel.lua", "lines": "232-240" }
+          ]
+        },
+        { "title": "Show a popup with the title, note, summary, basedOn and file", "file": "lua/context-outline/panel.lua", "lines": "264-280" },
+        { "title": "Reload and close keys", "file": "lua/context-outline/panel.lua", "lines": "298-299" }
+      ]
+    },
+    {
+      "title": "6. Remembering the last code window",
+      "file": "lua/context-outline/panel.lua",
+      "lines": "363-368",
+      "children": [
+        { "title": "Skip the panel itself and floating windows", "file": "lua/context-outline/panel.lua", "lines": "365" }
+      ]
+    },
+    {
+      "title": "7. Prompts for AI tools",
+      "children": [
+        {
+          "title": "Copy a bundled prompt to the clipboard",
+          "file": "lua/context-outline/init.lua",
+          "lines": "30-41",
+          "children": [
+            { "title": "Find the plugin folder from this file's own path", "file": "lua/context-outline/init.lua", "lines": "24-27" },
+            { "title": "Show an error if the prompt file is missing", "file": "lua/context-outline/init.lua", "lines": "32-36" },
+            { "title": "Put it in the \" and + registers", "file": "lua/context-outline/init.lua", "lines": "37-40" }
+          ]
+        },
+        { "title": "Build prompt: make root.json from scratch, with format and style rules", "file": "media/build-prompt.md", "lines": "1-39" },
+        {
+          "title": "Reindex prompt: update root.json after code changes",
+          "file": "media/reindex-prompt.md",
+          "lines": "1-22",
+          "children": [
+            { "title": "Use git diff from the basedOn commit; if it's missing, check every node", "file": "media/reindex-prompt.md", "lines": "3-6" },
+            { "title": "Fix moved lines and files, add new behaviour, remove dead nodes, keep hand edits", "file": "media/reindex-prompt.md", "lines": "8-17" }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "8. Panel state kept between renders",
+      "file": "lua/context-outline/panel.lua",
+      "lines": "9-19",
+      "children": [
+        { "title": "Folds are stored by item path, so they survive reloads", "file": "lua/context-outline/panel.lua", "lines": "16" },
+        { "title": "Panel line number maps to the item drawn there", "file": "lua/context-outline/panel.lua", "lines": "17" }
+      ]
+    },
+    {
+      "title": "9. Docs",
+      "children": [
+        { "title": "Install with lazy.nvim", "file": "README.md", "lines": "5-20" },
+        { "title": "Panel keys", "file": "README.md", "lines": "22-39" },
+        { "title": "Commands", "file": "README.md", "lines": "41-45" },
+        { "title": "Options", "file": "README.md", "lines": "47-61" }
+      ]
+    }
+  ]
+}
