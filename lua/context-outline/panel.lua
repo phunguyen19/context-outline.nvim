@@ -84,6 +84,17 @@ function M.render()
       ":ContextOutlineBuildPrompt copies a prompt",
       "for your AI tool to build the map.",
     }
+    local tools = require("context-outline.ai").enabled_names()
+    if #tools > 0 then
+      local labels = vim.tbl_map(function(n)
+        return require("context-outline.ai").tools[n].label
+      end, tools)
+      vim.list_extend(lines, {
+        "",
+        ":ContextOutlineBuild runs " .. table.concat(labels, " or "),
+        "in a terminal to build it.",
+      })
+    end
   end
 
   vim.bo[state.buf].modifiable = true
@@ -106,6 +117,7 @@ end
 function M.reload()
   local root_dir, map_path = map.find()
   state.root_dir, state.map_path, state.data = root_dir, map_path, nil
+  state.mtime = map_path and M.mtime(map_path) or nil
   if map_path then
     local data, err = map.load(map_path)
     if data then
@@ -261,6 +273,27 @@ function M.yank_context_visual()
   yank(nodes)
 end
 
+-- Titles from the top of the map down to the row's item.
+local function row_titles(row)
+  local titles, node = {}, state.data
+  local root_title = node.name or node.title or vim.fs.basename(state.root_dir)
+  table.insert(titles, root_title)
+  for i in row.key:gmatch("%.(%d+)") do
+    node = node.children[tonumber(i)]
+    table.insert(titles, map.title(node))
+  end
+  return titles
+end
+
+-- Run an AI CLI in a terminal to add finer steps under the item.
+function M.detail()
+  local row = row_at()
+  if not row then
+    return
+  end
+  require("context-outline.ai").detail(nil, state.root_dir, row_titles(row), row.node)
+end
+
 function M.show_info()
   local row = row_at()
   if not row then
@@ -294,6 +327,9 @@ local function set_keymaps(buf)
   map_key(km.collapse, M.collapse, "Collapse item")
   map_key(km.yank_context, M.yank_context, "Yank context")
   map_key(km.yank_context, M.yank_context_visual, "Yank context", "x")
+  if km.detail then
+    map_key(km.detail, M.detail, "More detail child items with AI (terminal)")
+  end
   map_key(km.info, M.show_info, "Show item details")
   map_key(km.reload, M.reload, "Reload map")
   map_key(km.close, M.close, "Close panel")
@@ -364,6 +400,22 @@ function M.track_window()
   local w = vim.api.nvim_get_current_win()
   if w ~= state.win and vim.api.nvim_win_get_config(w).relative == "" then
     state.prev_win = w
+  end
+end
+
+function M.mtime(path)
+  local st = vim.uv.fs_stat(path)
+  return st and (st.mtime.sec .. "." .. st.mtime.nsec) or nil
+end
+
+-- Reload if root.json was created or changed outside Neovim (e.g. by an AI CLI).
+function M.check_changed()
+  if not M.is_open() then
+    return
+  end
+  local _, map_path = map.find()
+  if map_path ~= state.map_path or (map_path and M.mtime(map_path) ~= state.mtime) then
+    M.reload()
   end
 end
 
